@@ -1,4 +1,5 @@
 import {Utils} from "./Utils";
+import {Context} from "./Context";
 
 interface ICanvasConfig {
     width?: number;
@@ -34,7 +35,7 @@ export class Canvas {
     width: number;
     height: number;
     canvas: HTMLCanvasElement;
-    context: CanvasRenderingContext2D;
+    context: Context;
 
     constructor(config: ICanvasConfig) {
         let conf = config || {};
@@ -51,7 +52,9 @@ export class Canvas {
         this.canvas.style.top = '0';
         this.canvas.style.left = '0';
 
-        this.context = this.canvas.getContext('2d');
+        this.context = Object.setPrototypeOf(this.canvas.getContext('2d'), Context.prototype);
+        this.context.customCanvas = this;
+
         this.setSize(config.width, config.height);
     }
 
@@ -70,5 +73,9 @@ export class Canvas {
     setSize(width: number, height: number) {
         this.setWidth(width || 0);
         this.setHeight(height || 0);
+    }
+
+    getContext(): Context {
+        return this.context;
     }
 }

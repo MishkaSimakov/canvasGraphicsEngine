@@ -16,19 +16,11 @@ export interface GraphicsConfig extends NodeConfig {
 }
 
 class Graphics extends Container<Scene> {
-    canvas: Canvas;
     content: HTMLDivElement;
-
-
     container: GetSet<HTMLDivElement, this>;
 
     constructor(config: GraphicsConfig) {
         super(config);
-
-        this.canvas = new Canvas({
-            width: this.width(),
-            height: this.height(),
-        });
 
         let container = this.container();
 
@@ -40,8 +32,6 @@ class Graphics extends Container<Scene> {
         this.content.style.userSelect = 'none';
 
         this.content.setAttribute('role', 'presentation');
-
-        this.content.appendChild(this.canvas.canvas);
 
         container.appendChild(this.content);
     }
@@ -62,6 +52,17 @@ class Graphics extends Container<Scene> {
 
             container.appendChild(this.content);
         }
+
+        return this;
+    }
+
+    add(scene: Scene) {
+        super.add(scene);
+
+        scene.setSize({ width: this.width(), height: this.height() });
+        scene.draw();
+
+        this.content.appendChild(scene.canvas.canvas);
 
         return this;
     }
