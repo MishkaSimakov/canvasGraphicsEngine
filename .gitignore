@@ -1,0 +1,6 @@
+/dist/index.js
+/dist/index.js.map
+
+node_modules
+.idea
+package-lock.json
