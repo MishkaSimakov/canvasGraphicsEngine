@@ -1,5 +1,5 @@
 import EventsManager from "./EventsManager";
-import {GraphicsManagerEvents} from "./GraphicsManager";
+import {GraphicsManagerEvents} from "./Graphics";
 
 export default class Pointer {
     graphicsManagerEvents: EventsManager<GraphicsManagerEvents>;
