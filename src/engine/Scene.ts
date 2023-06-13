@@ -1,12 +1,17 @@
 import {Container} from "./Container";
-import {Shape} from "./Shape";
+import {Shape, shapes} from "./Shape";
 import {Group} from "./Group";
-import {Canvas} from "./Canvas";
-import {Context} from "./Context";
+import {HitCanvas, SceneCanvas} from "./Canvas";
 import {NodeConfig} from "./Node";
+import {Vector2} from "./types";
+import {Utils} from "./Utils";
 
 export default class Scene extends Container<Group | Shape> {
-    canvas: Canvas = new Canvas({
+    canvas = new SceneCanvas({
+        width: 0,
+        height: 0
+    });
+    hitCanvas = new HitCanvas({
         width: 0,
         height: 0
     });
@@ -19,6 +24,7 @@ export default class Scene extends Container<Group | Shape> {
 
     setSize({width, height}) {
         this.canvas.setSize(width, height);
+        this.hitCanvas.setSize(width, height);
 
         return this;
     }
@@ -38,15 +44,34 @@ export default class Scene extends Container<Group | Shape> {
         }
     }
 
-    draw() {
-        this.canvas.getContext().clear();
+    drawHit() {
+        this.hitCanvas.getContext().clear();
 
-        Container.prototype.draw.call(this);
-
-        return this;
+        Container.prototype.drawHit.call(this);
     }
 
-    getContext(): Context {
-        return this.canvas.getContext();
+    drawScene() {
+        this.canvas.getContext().clear();
+
+        Container.prototype.drawScene.call(this);
+    }
+
+    getIntersection(pos: Vector2): Shape {
+        if (!pos)
+            return;
+
+        const ratio =  this.hitCanvas.pixelRatio;
+        const p = this.hitCanvas.context.getImageData(
+            Math.round(pos.x * ratio),
+            Math.round(pos.y * ratio),
+            1,
+            1
+        ).data;
+
+        if (p[3] > 0) {
+            const colorKey = '#' + Utils.rgbToHex(p[0], p[1], p[2]);
+
+            return shapes[colorKey];
+        }
     }
 }

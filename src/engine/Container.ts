@@ -18,9 +18,28 @@ export abstract class Container<ChildType extends Node = Node> extends Node {
         return this;
     }
 
-    draw() {
-        this.children.forEach(child => {
-            child.draw();
+    drawScene() {
+        this.drawChildren('drawScene');
+    }
+
+    drawHit() {
+        this.drawChildren('drawHit');
+    }
+
+    private drawChildren(drawMethod: string) {
+        this.children?.forEach(child => {
+            child[drawMethod]();
+        })
+    }
+
+    setChildrenIndices() {
+        if (!this.children)
+            return;
+
+        this.children.forEach((child, index) => {
+            child.index = index;
         });
+        
+        this.requestRedraw();
     }
 }

@@ -4,8 +4,7 @@ import {Factory} from "./Factory";
 import {GetSet} from "./types";
 import Scene from "./Scene";
 import {Transform} from "./Transform";
-
-let idCounter = 0;
+import {Shape} from "./Shape";
 
 export interface NodeConfig {
     [index: string]: any;
@@ -21,10 +20,30 @@ export interface NodeConfig {
     originY?: number;
 }
 
+type NodeEventMap = GlobalEventHandlersEventMap & {
+    [index: string]: any;
+}
+
+export interface EventObject<EventType> {
+    type: string;
+    target: Shape | Scene;
+    evt: EventType;
+    currentTarget: Node;
+    pointerId: number;
+    child?: Node;
+}
+
+export type EventListener<This, EventType> = (
+    this: This,
+    ev: EventObject<EventType>
+) => void;
+
 export abstract class Node<Config extends NodeConfig = NodeConfig> {
     index: number = 0;
     attrs: any = {};
     parent?: Container<Node>;
+
+    eventListeners: Record<string, Array<{ name: string, handler: Function }>> = {};
 
     constructor(config?: Config) {
         this.setAttrs(config);
@@ -102,7 +121,57 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
         this.requestRedraw();
     }
 
-    abstract draw();
+    abstract drawScene();
+    abstract drawHit();
+
+    draw() {
+        this.drawScene();
+        this.drawHit();
+
+        return this;
+    }
+
+    on<K extends keyof NodeEventMap>(evtStr: K, handler: EventListener<this, NodeEventMap[K]>) {
+        let events = (evtStr as string).split(' ');
+
+        for (let event of events) {
+            let parts = event.split('.');
+            let baseEvent = parts[0];
+            let name = parts[1] || '';
+
+            if (!this.eventListeners[baseEvent])
+                this.eventListeners[baseEvent] = [];
+
+            this.eventListeners[baseEvent].push({
+                name: name,
+                handler: handler
+            });
+        }
+
+        return this;
+    }
+
+    fire(eventType: string, evt: any = {}) {
+        evt.target = evt.target || this;
+
+        let listeners = this.eventListeners[eventType];
+        if (listeners) {
+            for (let listener of listeners) {
+                listener.handler.call(this, evt);
+            }
+        }
+    }
+
+    destroy() {
+        let parent = this.getParent();
+
+        if (parent && parent.children) {
+            parent.children.splice(this.index, 1);
+            this.parent.setChildrenIndices();
+
+            this.parent = undefined;
+        }
+    }
 
     name: GetSet<string, this>;
     x: GetSet<number, this>;

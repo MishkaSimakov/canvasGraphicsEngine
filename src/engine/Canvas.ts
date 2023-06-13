@@ -1,5 +1,5 @@
 import {Utils} from "./Utils";
-import {Context} from "./Context";
+import {Context, HitContext, SceneContext} from "./Context";
 
 interface ICanvasConfig {
     width?: number;
@@ -51,21 +51,18 @@ export class Canvas {
         this.canvas.style.position = 'absolute';
         this.canvas.style.top = '0';
         this.canvas.style.left = '0';
-
-        this.context = Object.setPrototypeOf(this.canvas.getContext('2d'), Context.prototype);
-        this.context.customCanvas = this;
-
-        this.setSize(config.width, config.height);
     }
 
     setWidth(width: number) {
         this.width = this.canvas.width = width * this.pixelRatio;
+        this.canvas.style.width = width + 'px';
 
         this.context.scale(this.pixelRatio, this.pixelRatio);
     }
 
     setHeight(height: number) {
         this.height = this.canvas.height = height * this.pixelRatio;
+        this.canvas.style.height = height + 'px';
 
         this.context.scale(this.pixelRatio, this.pixelRatio);
     }
@@ -77,5 +74,28 @@ export class Canvas {
 
     getContext(): Context {
         return this.context;
+    }
+}
+
+export class SceneCanvas extends Canvas {
+    constructor(config?: ICanvasConfig) {
+        super(config);
+
+        this.context = Object.setPrototypeOf(this.canvas.getContext('2d'), SceneContext.prototype);
+        this.context.customCanvas = this;
+
+        this.setSize(config.width, config.height);
+    }
+}
+
+
+export class HitCanvas extends Canvas {
+    constructor(config?: ICanvasConfig) {
+        super(config);
+
+        this.context = Object.setPrototypeOf(this.canvas.getContext('2d', {willReadFrequently: true}), HitContext.prototype);
+        this.context.customCanvas = this;
+
+        this.setSize(config.width, config.height);
     }
 }
