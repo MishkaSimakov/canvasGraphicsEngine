@@ -53,6 +53,8 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
     }
 
     requestRedraw() {
+        console.log("request redraw", this.name());
+
         this.getScene()?.batchDraw();
     }
 
@@ -106,6 +108,9 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
         let originX = this.originX();
         let originY = this.originY();
 
+        let scaleX = this.attrs.scaleX ?? 1;
+        let scaleY = this.attrs.scaleY ?? 1;
+
         if (x !== 0 || y !== 0)
             tr.translate(x, y);
 
@@ -115,11 +120,24 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
         if (height !== 0 && originY)
             tr.translate(0, -1 * height * originY);
 
+        if (scaleX !== 1 || scaleY !== 1)
+            tr.scale(scaleX, scaleY);
+
         return tr;
     }
 
     setAttr(key: string, value: any) {
+        let oldValue = this.attrs[key];
+
+        if (oldValue === value && !Utils.isObject(value))
+            return;
+
         this.attrs[key] = value;
+
+        this.fire(key + 'Change', {
+            oldValue: oldValue,
+            value: value
+        });
 
         this.requestRedraw();
     }

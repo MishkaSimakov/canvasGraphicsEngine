@@ -2,6 +2,9 @@ export const Utils = {
     isFunction(obj: any): boolean {
         return !!(obj && obj.constructor && obj.call && obj.apply);
     },
+    isObject(val: any): val is Object {
+        return val instanceof Object;
+    },
     capitalize(str: string): string {
         return str.charAt(0).toUpperCase() + str.slice(1);
     },

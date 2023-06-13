@@ -1,6 +1,5 @@
 import Scene from "./engine/Scene";
-import Rectangle from "./engine/shapes/Rectangle";
-import {Group} from "./engine/Group";
+import {Card} from "./engine/shapes/Card";
 
 export default class TestScene extends Scene {
     constructor() {
@@ -8,33 +7,13 @@ export default class TestScene extends Scene {
             name: "Scene"
         });
 
-        let rect = new Rectangle({
-            width: 100,
-            height: 100,
-            fill: 'black',
-            name: "Rect",
+        let card = new Card({
+            width: 200,
+            height: 200,
+            x: 100,
+            y: 100
         });
 
-        rect.x(10).y(10);
-
-        rect.on('pointerdown', () => {
-            console.log('hello world!')
-        });
-
-        let group = new Group({
-            name: "Group"
-        });
-
-        group.add(rect);
-
-        rect.on('pointerenter', () => {
-            rect.fill('yellow')
-        });
-
-        rect.on('pointerout', () => {
-            rect.fill('red')
-        });
-
-        this.add(group);
+        this.add(card);
     }
 }

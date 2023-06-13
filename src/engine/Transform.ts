@@ -39,6 +39,14 @@ export class Transform {
         return this;
     }
 
+    scale(sx: number, sy: number) {
+        this.m[0] *= sx;
+        this.m[1] *= sx;
+        this.m[2] *= sy;
+        this.m[3] *= sy;
+        return this;
+    }
+
     translate(x: number, y: number): Transform {
         this.m[4] += this.m[0] * x + this.m[2] * y;
         this.m[5] += this.m[1] * x + this.m[3] * y;

@@ -42,14 +42,14 @@ export class SceneContext extends Context {
     _fill(shape: Shape) {
         this.fillStyle = shape.fill();
 
-        this.fill();
+        shape._fillFunc(this);
     }
 
     _stroke(shape: Shape) {
         this.strokeStyle = shape.stroke();
         this.lineWidth = shape.strokeWidth();
 
-        this.stroke();
+        shape._strokeFunc(this);
     }
 }
 
@@ -57,13 +57,13 @@ export class HitContext extends Context {
     _fill(shape: Shape) {
         this.fillStyle = shape.colorKey;
 
-        this.fill();
+        shape._fillFuncHit(this);
     }
 
     _stroke(shape: Shape) {
         this.strokeStyle = shape.colorKey;
         this.lineWidth = shape.strokeWidth();
 
-        this.stroke();
+        shape._strokeFuncHit(this);
     }
 }

@@ -1,4 +1,5 @@
-import { Node } from './Node';
+import {Node} from './Node';
+import {Factory} from "./Factory";
 
 export abstract class Container<ChildType extends Node = Node> extends Node {
     children?: Array<ChildType> = [];
@@ -7,7 +8,20 @@ export abstract class Container<ChildType extends Node = Node> extends Node {
         return this.children;
     }
 
-    add(child: ChildType) {
+    add(...children: ChildType[]) {
+        if (children.length === 0)
+            return this;
+
+        if (children.length > 1) {
+            for (let child of children) {
+                this.add(child);
+            }
+
+            return this;
+        }
+
+        const child = children[0];
+
         child.index = this.children.length;
         child.parent = this;
 
@@ -56,4 +70,17 @@ export abstract class Container<ChildType extends Node = Node> extends Node {
 
         return false;
     }
+
+    getWidth(): number {
+        if (this.attrs.width !== 'auto')
+            return this.attrs.width;
+        // TODO: add origin support for container
+    }
+
+    getHeight(): number {
+        return this.attrs.height;
+    }
 }
+
+Factory.overwriteGetter(Container, 'width', 'auto');
+Factory.overwriteGetter(Container, 'height', 'auto');

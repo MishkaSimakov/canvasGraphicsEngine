@@ -4,7 +4,7 @@ import {GetSet} from "./types";
 import {Factory} from "./Factory";
 import {Utils} from "./Utils";
 
-interface ShapeConfig extends NodeConfig {
+export interface ShapeConfig extends NodeConfig {
     fill?: string;
     stroke?: string;
     strokeWidth?: number;
@@ -14,8 +14,30 @@ interface ShapeConfig extends NodeConfig {
 
 export const shapes: Record<string, Shape> = {};
 
+
+function _fillFunc(context) {
+    context.fill();
+}
+
+function _strokeFunc(context) {
+    context.stroke();
+}
+
+function _fillFuncHit(context) {
+    context.fill();
+}
+
+function _strokeFuncHit(context) {
+    context.stroke();
+}
+
 export class Shape<Config extends ShapeConfig = ShapeConfig> extends Node<Config> {
     colorKey: string;
+
+    _fillFunc: (ctx: Context) => void;
+    _strokeFunc: (ctx: Context) => void;
+    _fillFuncHit: (ctx: Context) => void;
+    _strokeFuncHit: (ctx: Context) => void;
 
     constructor(config?: Config) {
         super(config);
@@ -32,6 +54,10 @@ export class Shape<Config extends ShapeConfig = ShapeConfig> extends Node<Config
 
     getSceneFunc() {
         return this.attrs.sceneFunc || this['_sceneFunc'];
+    }
+
+    getHitFunc() {
+        return this.attrs.hitFunc || this['_hitFunc'];
     }
 
     drawScene() {
@@ -90,6 +116,11 @@ export class Shape<Config extends ShapeConfig = ShapeConfig> extends Node<Config
     sceneFunc: GetSet<(context: Context, shape: Shape) => void, this>;
     hitFunc: GetSet<(context: Context, shape: Shape) => void, this>;
 }
+
+Shape.prototype._fillFunc = _fillFunc;
+Shape.prototype._strokeFunc = _strokeFunc;
+Shape.prototype._fillFuncHit = _fillFuncHit;
+Shape.prototype._strokeFuncHit = _strokeFuncHit;
 
 
 Factory.addGetterSetter(Shape, 'fill');

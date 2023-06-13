@@ -374,6 +374,22 @@ class Graphics extends Container<Scene> {
         }
     }
 
+    _wheel(evt) {
+        this.updatePointerPosition(evt);
+
+        let shape = this.getIntersection(this.getPointerPosition());
+
+        if (shape) {
+            shape.fire('wheel', { evt: evt });
+        } else {
+            this.fire('wheel', {
+                evt: evt,
+                target: this,
+                currentTarget: this
+            })
+        }
+    }
+
     getIntersection(pos: Vector2): Shape {
         if (!pos)
             return;
@@ -386,6 +402,15 @@ class Graphics extends Container<Scene> {
             if (shape)
                 return shape;
         }
+    }
+
+    getPointerPosition(): Vector2 {
+        const pos = this._pointerPositions[0] || this._changedPointerPositions[0];
+
+        return {
+            x: pos.x,
+            y: pos.y
+        };
     }
 }
 
