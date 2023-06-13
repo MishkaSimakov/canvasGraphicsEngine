@@ -10,6 +10,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let scene = new TestScene();
     graphics.add(scene);
-
-    scene.x(10);
 });

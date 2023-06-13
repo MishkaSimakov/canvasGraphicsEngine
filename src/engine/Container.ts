@@ -39,7 +39,21 @@ export abstract class Container<ChildType extends Node = Node> extends Node {
         this.children.forEach((child, index) => {
             child.index = index;
         });
-        
+
         this.requestRedraw();
+    }
+
+    isAncestorOf(node: Node): boolean {
+        let parent = node.getParent();
+
+        while (parent) {
+            if (parent._id === this._id) {
+                return true;
+            }
+
+            parent = parent.getParent();
+        }
+
+        return false;
     }
 }

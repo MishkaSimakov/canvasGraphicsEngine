@@ -29,7 +29,7 @@ export abstract class Context extends CanvasRenderingContext2D {
     abstract _stroke(shape: Shape);
 
     strokeShape(shape: Shape) {
-        if (!shape.hasStroke())
+        if (shape.hasStroke())
             this._stroke(shape);
     }
 

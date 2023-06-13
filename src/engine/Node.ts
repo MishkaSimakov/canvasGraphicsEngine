@@ -33,12 +33,15 @@ export interface EventObject<EventType> {
     child?: Node;
 }
 
+let idCounter = 0;
+
 export type EventListener<This, EventType> = (
     this: This,
     ev: EventObject<EventType>
 ) => void;
 
 export abstract class Node<Config extends NodeConfig = NodeConfig> {
+    _id = idCounter++;
     index: number = 0;
     attrs: any = {};
     parent?: Container<Node>;
@@ -122,6 +125,7 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
     }
 
     abstract drawScene();
+
     abstract drawHit();
 
     draw() {
@@ -151,14 +155,36 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
         return this;
     }
 
-    fire(eventType: string, evt: any = {}) {
-        evt.target = evt.target || this;
+    _fireAndBubble(eventType: string, evt: any = {}, compareShape?) {
+        let shouldStop = (eventType === 'mouseenter' || eventType === 'mouseleave') &&
+            (compareShape && (this === compareShape || (this.isAncestorOf && this.isAncestorOf(compareShape))));
 
+        if (shouldStop)
+            return;
+
+        this._fire(eventType, evt);
+
+        if (this.parent) {
+            this._fireAndBubble.call(this.parent, eventType, evt);
+        }
+    }
+
+    _fire(eventType: string, evt: any = {}) {
         let listeners = this.eventListeners[eventType];
         if (listeners) {
             for (let listener of listeners) {
                 listener.handler.call(this, evt);
             }
+        }
+    }
+
+    fire(eventType: string, evt: any = {}, bubble?: boolean) {
+        evt.target = evt.target || this;
+
+        if (bubble) {
+            this._fireAndBubble(eventType, evt);
+        } else {
+            this._fire(eventType, evt);
         }
     }
 
@@ -171,6 +197,10 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
 
             this.parent = undefined;
         }
+    }
+
+    isAncestorOf(node: Node): boolean {
+        return false;
     }
 
     name: GetSet<string, this>;

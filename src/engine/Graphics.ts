@@ -125,6 +125,16 @@ class Graphics extends Container<Scene> {
     _pointerPositions: (Vector2 & { id?: number })[] = [];
     _changedPointerPositions: (Vector2 & { id: number })[] = [];
 
+    _pointerClickStart: Shape;
+    _mouseClickStart: Shape;
+    _touchClickStart: Shape;
+
+    _pointerTarget: Shape;
+    _mouseTarget: Shape;
+    _touchTarget: Shape;
+
+    CLICK_TIMEOUT: number = 100;
+
     constructor(config: GraphicsConfig) {
         super(config);
 
@@ -244,12 +254,118 @@ class Graphics extends Container<Scene> {
             shape.fire(events.pointerdown, {
                 evt: evt,
                 pointerId: pointer.id
-            });
+            }, true);
             triggeredOnShape = true;
-        })
+
+            this['_' + eventType + 'ClickStart'] = shape;
+        });
 
         if (!triggeredOnShape) {
             this.fire(events.pointerdown, {
+                evt: evt,
+                target: this,
+                currentTarget: this,
+                pointerId: this._pointerPositions[0].id
+            });
+        }
+    }
+
+    _pointermove(evt: TouchEvent | MouseEvent | PointerEvent) {
+        const events = getEventsMap(evt.type);
+        const eventType = getEventType(evt.type);
+
+        if (!events)
+            return;
+
+        this.updatePointerPosition(evt);
+
+        let triggeredOnShape = false;
+
+        let target = this['_' + eventType + 'Target'];
+        this._changedPointerPositions.forEach((pointer) => {
+            let currentTarget = this.getIntersection(pointer);
+
+            let event = {
+                evt: evt,
+                pointerId: pointer.id
+            };
+
+            let targetChanged = currentTarget !== target;
+
+            if (targetChanged && target) {
+                target._fireAndBubble(events.pointerout, {...event}, currentTarget);
+                target._fireAndBubble(events.pointerleave, {...event}, currentTarget);
+            }
+
+            if (currentTarget) {
+                triggeredOnShape = true;
+
+                if (targetChanged) {
+                    currentTarget.fire(events.pointerover, {...event}, true);
+                    currentTarget.fire(events.pointerenter, {...event}, true);
+
+                    this['_' + eventType + 'Target'] = currentTarget;
+                }
+                currentTarget.fire(events.pointermove, {...event}, true);
+            } else {
+                if (target) {
+                    this.fire(events.pointerover, {
+                        evt: evt,
+                        target: this,
+                        currentTarget: this,
+                        pointerId: pointer.id
+                    });
+
+                    this['_' + eventType + 'Target'] = undefined;
+                }
+            }
+        });
+
+        if (!triggeredOnShape) {
+            this.fire(events.pointermove, {
+                evt: evt,
+                target: this,
+                currentTarget: this,
+                pointerId: this._pointerPositions[0].id
+            });
+        }
+    }
+
+    _pointerup(evt: TouchEvent | MouseEvent | PointerEvent) {
+        const events = getEventsMap(evt.type);
+        const eventType = getEventType(evt.type);
+
+        if (!events)
+            return;
+
+        this.updatePointerPosition(evt);
+
+        let triggeredOnShape = false;
+
+        this._changedPointerPositions.forEach((pointer) => {
+            let shape = this.getIntersection(pointer);
+
+            if (!shape)
+                return;
+
+            shape.fire(events.pointerup, {
+                evt: evt,
+                pointerId: pointer.id
+            }, true);
+            triggeredOnShape = true;
+
+            if (shape === this['_' + eventType + 'ClickStart']) {
+                shape.fire(events.pointerclick, {
+                    evt: evt,
+                    pointerId: pointer.id
+                }, true);
+            }
+        });
+
+        this['_' + eventType + 'ClickStart'] = undefined;
+
+        if (!triggeredOnShape) {
+            this.fire(events.pointerup, {
                 evt: evt,
                 target: this,
                 currentTarget: this,

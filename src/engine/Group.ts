@@ -1,5 +1,6 @@
-import {Node} from './Node'
+import {Container} from "./Container";
+import {Shape} from "./Shape";
 
-export class Group extends Node {
+export class Group extends Container<Shape> {
 
 }
