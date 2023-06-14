@@ -3,6 +3,8 @@ import {GetSet} from "../types";
 import {Factory} from "../Factory";
 import {Utils} from "../Utils";
 import {Context} from "../Context";
+import {_registerNode} from "../Global";
+import {_registerShape} from "../Scene";
 
 export interface TextConfig extends ShapeConfig {
     text?: string;
@@ -173,6 +175,10 @@ export class Text extends Shape {
     lineHeight: GetSet<number, this>;
     align: GetSet<string, this>;
 }
+
+Text.prototype.className = 'Text';
+_registerNode(Text);
+_registerShape(Text);
 
 Text.prototype._fillFunc = _fillFunc;
 Text.prototype._strokeFunc = _strokeFunc;

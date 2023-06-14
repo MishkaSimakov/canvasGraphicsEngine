@@ -3,6 +3,7 @@ import {Context} from "./Context";
 import {GetSet} from "./types";
 import {Factory} from "./Factory";
 import {Utils} from "./Utils";
+import {_registerNode} from "./Global";
 
 export interface ShapeConfig extends NodeConfig {
     fill?: string;
@@ -116,6 +117,9 @@ export class Shape<Config extends ShapeConfig = ShapeConfig> extends Node<Config
     sceneFunc: GetSet<(context: Context, shape: Shape) => void, this>;
     hitFunc: GetSet<(context: Context, shape: Shape) => void, this>;
 }
+
+Shape.prototype.nodeType = 'Shape';
+_registerNode(Shape)
 
 Shape.prototype._fillFunc = _fillFunc;
 Shape.prototype._strokeFunc = _strokeFunc;

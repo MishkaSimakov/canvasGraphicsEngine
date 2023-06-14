@@ -1,10 +1,12 @@
 import Scene from "./Scene";
 import {Container} from "./Container";
-import {NodeConfig} from "./Node";
+import {Node, NodeConfig} from "./Node";
 import {GetSet, Vector2} from "./types";
 import {Factory} from "./Factory";
 import {Utils} from "./Utils";
 import {Shape} from "./Shape";
+import {DD} from "./Drag";
+import {_registerNode} from "./Global";
 
 type GraphicsManagerEvents = 'pointerdown' | 'pointerup' | 'pointermove' | 'ready';
 
@@ -170,6 +172,10 @@ class Graphics extends Container<Scene> {
         });
     }
 
+    getGraphics(): Graphics {
+        return this;
+    }
+
     setContainer(container: HTMLDivElement | string) {
         if (typeof container === 'string') {
             container = document.getElementById(container) as HTMLDivElement;
@@ -199,6 +205,10 @@ class Graphics extends Container<Scene> {
         this.content.appendChild(scene.canvas.canvas);
 
         return this;
+    }
+
+    getPointerById(id: number) {
+        return this._pointerPositions.find(p => p.id === id);
     }
 
     updatePointerPosition(evt) {
@@ -248,6 +258,8 @@ class Graphics extends Container<Scene> {
         this._changedPointerPositions.forEach((pointer) => {
             let shape = this.getIntersection(pointer);
 
+            Graphics['_' + eventType + 'ListenClick'] = true;
+
             if (!shape)
                 return;
 
@@ -278,6 +290,9 @@ class Graphics extends Container<Scene> {
             return;
 
         this.updatePointerPosition(evt);
+
+        if (DD.isDragging)
+            return;
 
         let triggeredOnShape = false;
 
@@ -354,6 +369,9 @@ class Graphics extends Container<Scene> {
             }, true);
             triggeredOnShape = true;
 
+            if (!Graphics['_' + eventType + 'ListenClick'])
+                return;
+
             if (shape === this['_' + eventType + 'ClickStart']) {
                 shape.fire(events.pointerclick, {
                     evt: evt,
@@ -380,7 +398,7 @@ class Graphics extends Container<Scene> {
         let shape = this.getIntersection(this.getPointerPosition());
 
         if (shape) {
-            shape.fire('wheel', { evt: evt });
+            shape.fire('wheel', {evt: evt});
         } else {
             this.fire('wheel', {
                 evt: evt,
@@ -413,6 +431,9 @@ class Graphics extends Container<Scene> {
         };
     }
 }
+
+Graphics.prototype.nodeType = 'Graphics';
+_registerNode(Graphics);
 
 Factory.addGetterSetter(Graphics, 'container');
 

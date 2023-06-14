@@ -2,9 +2,10 @@ import {Container} from "./Container";
 import {Shape, shapes} from "./Shape";
 import {Group} from "./Group";
 import {HitCanvas, SceneCanvas} from "./Canvas";
-import {NodeConfig} from "./Node";
+import {Node, NodeConfig} from "./Node";
 import {Vector2} from "./types";
 import {Utils} from "./Utils";
+import {_registerNode} from "./Global";
 
 export default class Scene extends Container<Group | Shape> {
     canvas = new SceneCanvas({
@@ -60,7 +61,7 @@ export default class Scene extends Container<Group | Shape> {
         if (!pos)
             return;
 
-        const ratio =  this.hitCanvas.pixelRatio;
+        const ratio = this.hitCanvas.pixelRatio;
         const p = this.hitCanvas.context.getImageData(
             Math.round(pos.x * ratio),
             Math.round(pos.y * ratio),
@@ -74,4 +75,11 @@ export default class Scene extends Container<Group | Shape> {
             return shapes[colorKey];
         }
     }
+}
+
+Scene.prototype.nodeType = 'Scene';
+_registerNode(Scene);
+
+export function _registerShape(ShapeClass: any) {
+    Scene.prototype.add[ShapeClass.prototype.getClassName()] = ShapeClass;
 }

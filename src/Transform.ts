@@ -1,3 +1,5 @@
+import {Vector2} from "./types";
+
 export class Transform {
     m: Array<number>;
 
@@ -52,5 +54,12 @@ export class Transform {
         this.m[5] += this.m[1] * x + this.m[3] * y;
 
         return this;
+    }
+
+    getTranslation(): Vector2 {
+        return {
+            x: this.m[4],
+            y: this.m[5],
+        };
     }
 }

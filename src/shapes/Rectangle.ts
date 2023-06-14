@@ -2,7 +2,8 @@ import {Shape, ShapeConfig} from "../Shape";
 import {Context} from "../Context";
 import {GetSet} from "../types";
 import {Factory} from "../Factory";
-import {Utils} from "../Utils";
+import {_registerNode} from "../Global";
+import {_registerShape} from "../Scene";
 
 export interface RectangleConfig extends ShapeConfig {
     cornerRadius?: number | number[];
@@ -29,5 +30,9 @@ export class Rectangle extends Shape<RectangleConfig> {
 
     cornerRadius: GetSet<number | number[], this>;
 }
+
+Rectangle.prototype.className = 'Rectangle';
+_registerNode(Rectangle);
+_registerShape(Rectangle);
 
 Factory.addGetterSetter(Rectangle, 'cornerRadius', 0);

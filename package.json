@@ -4,7 +4,7 @@
     "build": "rollup --config rollup.config.dist.js",
     "watch": "rollup --watch --config rollup.config.dev.js"
   },
-  "dependencies": {
+  "devDependencies": {
     "rollup": "^2.35.1",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-typescript2": "^0.29.0",

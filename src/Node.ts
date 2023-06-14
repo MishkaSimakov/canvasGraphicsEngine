@@ -1,10 +1,13 @@
 import {Utils} from "./Utils";
 import {Container} from "./Container";
 import {Factory} from "./Factory";
-import {GetSet} from "./types";
+import {GetSet, Vector2} from "./types";
 import Scene from "./Scene";
 import {Transform} from "./Transform";
 import {Shape} from "./Shape";
+import {Graphics} from "./Graphics";
+import {DD} from "./Drag";
+import {Draw} from "./Global";
 
 export interface NodeConfig {
     [index: string]: any;
@@ -18,6 +21,9 @@ export interface NodeConfig {
     height?: number;
     originX?: number;
     originY?: number;
+
+    draggable?: boolean;
+    dragDistance?: number;
 }
 
 type NodeEventMap = GlobalEventHandlersEventMap & {
@@ -45,6 +51,10 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
     index: number = 0;
     attrs: any = {};
     parent?: Container<Node>;
+    className!: string;
+    nodeType!: string;
+
+    lastPos: Vector2;
 
     eventListeners: Record<string, Array<{ name: string, handler: Function }>> = {};
 
@@ -53,8 +63,6 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
     }
 
     requestRedraw() {
-        console.log("request redraw", this.name());
-
         this.getScene()?.batchDraw();
     }
 
@@ -62,6 +70,16 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
         let parent = this.getParent();
 
         return parent ? parent.getScene() : undefined;
+    }
+
+    getClassName() {
+        return this.className || this.nodeType;
+    }
+
+    getGraphics(): Graphics {
+        let parent = this.getParent();
+
+        return parent ? parent.getGraphics() : undefined;
     }
 
     getParent() {
@@ -206,6 +224,107 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
         }
     }
 
+    off(evtStr?: string) {
+        let events = (evtStr || '').split(' '),
+            parts: string[], baseEvent: string, name: string, event: string;
+
+        if (!evtStr) {
+            for (let t in this.eventListeners) {
+                this._off(t);
+            }
+        }
+
+        for (event of events) {
+            parts = event.split('.');
+            baseEvent = parts[0];
+            name = parts[1];
+
+            if (baseEvent) {
+                this._off(baseEvent, name);
+            } else {
+                for (let t in this.eventListeners) {
+                    this._off(t, name);
+                }
+            }
+        }
+    }
+
+    isDragging(): boolean {
+        const element = DD._dragElements.get(this._id);
+        return element && element.dragStatus === 'dragging';
+    }
+
+    setDraggable(draggable) {
+        this.setAttr('draggable', draggable);
+
+        this.off('mousedown.core');
+        this.off('touchdown.core');
+
+        if (draggable) {
+            this.on('mousedown.core touchdown.core', (evt) => {
+                // should check button
+                if (this.isDragging())
+                    return;
+
+                let hasDraggingChild = false;
+                DD._dragElements.forEach(element => {
+                   if (this.isAncestorOf(element.node)) {
+                       hasDraggingChild = true;
+                   }
+                });
+
+                if (!hasDraggingChild) {
+                    this.createDragElement(evt);
+                }
+            });
+        } else {
+            let graphics = this.getGraphics();
+
+            if (!graphics)
+                return;
+
+            const element = DD._dragElements.get(this._id);
+            const isReady = element && element.dragStatus === 'ready',
+                isDragging = element && element.dragStatus === 'dragging';
+
+            if (isDragging) {
+                this.stopDrag();
+            } else if (isReady) {
+                DD._dragElements.delete(this._id);
+            }
+        }
+    }
+
+    stopDrag(evt?) {
+        const element = DD._dragElements.get(this._id);
+
+        element.dragStatus = 'stopped';
+
+        DD._endDrag(evt);
+    }
+
+    _off(type, name?) {
+        let evtListeners = this.eventListeners[type];
+
+        if (!evtListeners)
+            return;
+
+        for (let i = 0; i < evtListeners.length; ++i) {
+            let {name: evtName, handler} = evtListeners[i];
+
+            if ((evtName !== 'core' || name === 'core') && (!name || name === evtName)) {
+                evtListeners.splice(i, 1);
+
+                if (evtListeners.length === 0) {
+                    delete this.eventListeners[type];
+                    break;
+                }
+
+                i--;
+            }
+        }
+    }
+
     destroy() {
         let parent = this.getParent();
 
@@ -221,6 +340,98 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
         return false;
     }
 
+    setPosition(pos: Vector2) {
+        this.x(pos.x).y(pos.y);
+
+        return this;
+    }
+
+    getPosition(): Vector2 {
+        return {
+            x: this.x(),
+            y: this.y()
+        };
+    }
+
+    getAbsolutePosition(): Vector2 {
+        return this.getAbsoluteTransform().getTranslation();
+    }
+
+    setAbsolutePosition(pos: Vector2) {
+        let translation = this.getAbsoluteTransform().getTranslation();
+
+        this.setPosition({
+            x: pos.x,
+            y: pos.y
+        });
+    }
+
+    startDrag(evt?, bubbleEvent = true) {
+        if (!DD._dragElements.has(this._id)) {
+            this.createDragElement(evt);
+        }
+
+        const element = DD._dragElements.get(this._id);
+        element.dragStatus = 'dragging';
+
+        this.fire('dragstart', {
+            type: 'dragstart',
+            target: this,
+            evt: evt && evt.evt
+        }, bubbleEvent);
+    }
+
+    createDragElement(evt) {
+        let pointerId = evt?.pointerId;
+        let graphics = this.getGraphics();
+        let ap = this.getAbsolutePosition();
+        let pos = graphics.getPointerById(pointerId) ||
+            graphics._changedPointerPositions[0] ||
+            ap;
+
+        DD._dragElements.set(this._id, {
+            node: this,
+            startPointerPos: pos,
+            offset: {
+                x: pos.x - ap.x,
+                y: pos.y - ap.y
+            },
+            dragStatus: 'ready',
+            pointerId
+        });
+    }
+
+    getDragDistance(): number {
+        if (this.attrs.dragDistance !== undefined) {
+            return this.attrs.dragDistance;
+        } else if (this.parent) {
+            return this.parent.getDragDistance();
+        } else {
+            return Draw.DRAG_DISTANCE;
+        }
+    }
+
+    setDragPosition(evt, element) {
+        const pos = this.getGraphics().getPointerById(element.pointerId);
+
+        if (!pos)
+            return;
+
+        let newNodePosition = {
+            x: pos.x - element.offset.x,
+            y: pos.y - element.offset.y
+        };
+
+        if (
+            !this.lastPos || this.lastPos.x !== newNodePosition.x || this.lastPos.y !== newNodePosition.y
+        ) {
+            this.setAbsolutePosition(newNodePosition);
+            this.requestRedraw();
+        }
+
+        this.lastPos = newNodePosition;
+    }
+
     name: GetSet<string, this>;
     x: GetSet<number, this>;
     y: GetSet<number, this>;
@@ -230,7 +441,12 @@ export abstract class Node<Config extends NodeConfig = NodeConfig> {
     height: GetSet<number, this>;
     originX: GetSet<number, this>;
     originY: GetSet<number, this>;
+
+    draggable: GetSet<boolean, this>;
+    dragDistance: GetSet<number, this>;
 }
+
+Node.prototype.nodeType = 'Node';
 
 Factory.addGetterSetter(Node, 'name', '');
 
@@ -246,3 +462,6 @@ Factory.addGetterSetter(Node, 'height', 0);
 
 Factory.addGetterSetter(Node, 'originX', 0);
 Factory.addGetterSetter(Node, 'originY', 0);
+
+Factory.addGetterSetter(Node, 'draggable', false);
+Factory.addGetterSetter(Node, 'dragDistance', undefined);
